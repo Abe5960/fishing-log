@@ -1,8 +1,34 @@
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Fishing Log">
+<meta name="theme-color" content="#f0f4fa">
+<title>Fishing Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600;700&display=swap');
   :root { --blue:#3b82f6;--card:#ffffff;--text:#1a2540;--muted:#a0bcd8;--pill:#e2eaf5; }
-  .fa-wrap { max-width:272px; margin:0 auto; font-family:'Inter',-apple-system,sans-serif; color:var(--text); }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body {
+    min-height:100vh; background:#f0f4fa;
+    font-family:'Inter',-apple-system,sans-serif;
+    color:var(--text); display:flex; flex-direction:column;
+    align-items:center; padding:24px 16px 40px;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(59,130,246,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(59,130,246,.045) 1px,transparent 1px);
+    background-size:36px 36px;
+    pointer-events:none; z-index:0;
+  }
+  .fa-wrap { max-width:272px; width:100%; position:relative; z-index:1; }
   .fa-card { background:var(--card); border-radius:24px; box-shadow:0 2px 4px rgba(59,130,246,.05),0 16px 48px rgba(59,130,246,.10),0 0 0 1px rgba(59,130,246,.07); overflow:hidden; }
   .orb { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:.35em; text-transform:uppercase; color:var(--muted); }
   .orb-wide { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:.55em; color:var(--muted); }
@@ -16,7 +42,7 @@
   .diary-btn:active { background:#edf2fa; }
   .log-header { padding:8px 16px 4px; display:flex; align-items:center; justify-content:space-between; }
   .clear-btn { background:none; border:none; cursor:pointer; padding:2px 4px; }
-  .log-scroll { max-height:200px; overflow-y:auto; padding:0 16px 12px; }
+  .log-scroll { max-height:55vh; overflow-y:auto; padding:0 16px 12px; }
   .date-row { padding:6px 0 4px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; border-bottom:1px solid rgba(59,130,246,.08); }
   .date-label { font-size:11px; font-weight:600; color:var(--text); letter-spacing:.03em; display:flex; align-items:center; gap:5px; }
   .diary-dot { width:6px; height:6px; border-radius:50%; background:var(--blue); display:inline-block; flex-shrink:0; }
@@ -31,6 +57,8 @@
   .diary-meta { font-size:10px; color:var(--blue); font-weight:600; margin-bottom:3px; display:flex; gap:8px; }
   .diary-note { font-size:11px; color:var(--text); line-height:1.5; word-break:break-all; }
   .log-empty { padding:20px 0; text-align:center; font-size:11px; color:var(--muted); letter-spacing:.1em; }
+ 
+  /* Diary Modal */
   .d-overlay { position:fixed; inset:0; background:rgba(26,37,64,.45); z-index:100; display:flex; align-items:center; justify-content:center; }
   .d-modal { background:#fff; border-radius:22px; width:256px; padding:20px 18px 16px; box-shadow:0 24px 64px rgba(59,130,246,.22); animation:slideUp .2s ease; }
   @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -47,7 +75,9 @@
   .d-cancel { flex:1; height:36px; border-radius:10px; border:1px solid rgba(59,130,246,.2); background:#f0f6ff; color:#7090b0; font-size:11px; font-family:'Inter',sans-serif; cursor:pointer; }
   .d-save { flex:2; height:36px; border-radius:10px; border:none; background:var(--blue); color:#fff; font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:.25em; text-transform:uppercase; cursor:pointer; box-shadow:0 4px 12px rgba(59,130,246,.3); }
 </style>
-
+</head>
+<body>
+ 
 <div class="fa-wrap">
   <div class="fa-card">
     <div class="fa-header">
@@ -67,7 +97,7 @@
     </div>
   </div>
 </div>
-
+ 
 <div id="d-overlay" style="display:none;" class="d-overlay" onclick="closeIfOutside(event)">
   <div class="d-modal" onclick="event.stopPropagation()">
     <div class="d-modal-title">Daily Diary</div>
@@ -100,25 +130,151 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
-const LURES=[{id:'orange',type:'single',color:'#FF8C00',name:'オレンジ'},{id:'red',type:'single',color:'#E02020',name:'赤'},{id:'black',type:'single',color:'#181818',name:'黒'},{id:'red-pink',type:'dual',c1:'#E02020',c2:'#FF6EB4',name:'赤/ピンク'},{id:'brown',type:'single',color:'#7B3B10',name:'茶色'},{id:'white',type:'single',color:'#EEEEEE',name:'白'},{id:'red-black',type:'dual',c1:'#E02020',c2:'#181818',name:'赤/黒'},{id:'black-gold',type:'dual',c1:'#1A1A1A',c2:'#C9A227',name:'黒/金'},{id:'red-orange',type:'dual',c1:'#E02020',c2:'#FF8500',name:'赤/橙'}];
-let logs=[],diaries={},open=new Set(),selWeather='',selSea='';
-const bgEl=document.getElementById('bg');
-LURES.forEach(l=>{const b=document.createElement('button');b.className='cb';b.style.background=l.type==='single'?l.color:`linear-gradient(135deg,${l.c1} 50%,${l.c2} 50%)`;if(l.id==='white')b.style.border='1px solid #dde8f5';b.onclick=()=>add(l,b);bgEl.appendChild(b);});
-function dot(l){const bg=l.type==='single'?l.color:`linear-gradient(135deg,${l.c1} 50%,${l.c2} 50%)`;const border=l.id==='white'?'border:1px solid #dde8f5;':'';return `<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${bg};flex-shrink:0;${border}box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>`;}
-function todayKey(){const now=new Date(),p=n=>String(n).padStart(2,'0');return `${now.getFullYear()}/${p(now.getMonth()+1)}/${p(now.getDate())}`;}
-function add(lure,btn){const now=new Date(),p=n=>String(n).padStart(2,'0');const date=todayKey(),time=`${p(now.getHours())}:${p(now.getMinutes())}`;logs.unshift({id:Date.now(),date,time,lid:lure.id});open.add(date);save();render();btn.style.transform='scale(0.82)';setTimeout(()=>{btn.style.transform='';},140);}
-function del(id){logs=logs.filter(e=>e.id!==id);save();render();}
-function toggle(d){open.has(d)?open.delete(d):open.add(d);render();}
-function clearAll(){if(!confirm('記録を全て削除しますか？'))return;logs=[];diaries={};save();render();}
-function openDiary(){const d=todayKey();document.getElementById('d-date').textContent=d;const ex=diaries[d]||{};selWeather=ex.weather||'';selSea=ex.sea||'';document.querySelectorAll('#d-weather .d-chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()===selWeather));document.querySelectorAll('#d-sea .d-chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()===selSea));document.getElementById('d-note').value=ex.note||'';document.getElementById('d-overlay').style.display='flex';}
-function closeDiary(){document.getElementById('d-overlay').style.display='none';}
-function closeIfOutside(e){if(e.target===document.getElementById('d-overlay'))closeDiary();}
-function sel(btn,group){const label=btn.textContent.trim();if(group==='weather')selWeather=btn.classList.contains('sel')?'':label;else selSea=btn.classList.contains('sel')?'':label;document.querySelectorAll(`#d-${group} .d-chip`).forEach(c=>c.classList.remove('sel'));if((group==='weather'&&selWeather)||(group==='sea'&&selSea))btn.classList.add('sel');}
-function saveDiary(){const d=todayKey();const note=document.getElementById('d-note').value.trim();if(selWeather||selSea||note)diaries[d]={weather:selWeather,sea:selSea,note};else delete diaries[d];save();render();closeDiary();}
-function render(){document.getElementById('tc').textContent=logs.length+'匹';const ls=document.getElementById('ls');const allDates=new Set([...logs.map(e=>e.date),...Object.keys(diaries)]);if(!allDates.size){ls.innerHTML='<div class="log-empty">ボタンを押して記録しよう</div>';return;}const grp={};logs.forEach(e=>{if(!grp[e.date])grp[e.date]=[];grp[e.date].push(e);});const dates=[...allDates].sort((a,b)=>b.localeCompare(a));ls.innerHTML=dates.map(d=>{const es=grp[d]||[],isOpen=open.has(d),diary=diaries[d];const preview=[...new Set(es.map(e=>e.lid))].slice(0,4).map(lid=>{const l=LURES.find(x=>x.id===lid);return l?dot(l):'';}).join('');const diaryDot=diary?'<span class="diary-dot"></span>':'';let inner='';if(isOpen){const entryRows=es.map(e=>{const l=LURES.find(x=>x.id===e.lid);return `<div class="log-entry"><span class="log-time">${e.time}</span>${l?dot(l):''}<button class="del-btn" onclick="del(${e.id})">✕</button></div>`;}).join('');const diaryBlock=diary?`<div class="diary-entry"><div class="diary-meta">${diary.weather?'<span>'+diary.weather+'</span>':''}${diary.sea?'<span>'+diary.sea+'</span>':''}</div>${diary.note?'<div class="diary-note">'+diary.note+'</div>':''}</div>`:'';inner=`<div class="day-entries">${diaryBlock}${entryRows}</div>`;}return `<div><div class="date-row" onclick="toggle('${d}')"><span class="date-label">${diaryDot}${d}</span><span class="date-meta">${preview}${es.length>0?'<span style="margin-left:3px;">'+es.length+'匹</span>':''}<span class="chevron">${isOpen?'▲':'▼'}</span></span></div>${inner}</div>`;}).join('');}
-async function load(){try{const r=await window.storage.get('fish-log-v3');if(r){const d=JSON.parse(r.value);logs=d.logs||[];diaries=d.diaries||{};}const today=todayKey();if(logs.some(e=>e.date===today)||diaries[today])open.add(today);}catch(e){}render();}
-async function save(){try{await window.storage.set('fish-log-v3',JSON.stringify({logs,diaries}));}catch(e){}}
-load();
+const STORAGE_KEY = 'fishing-log-v1';
+const LURES = [
+  { id:'orange',     type:'single', color:'#FF8C00', name:'オレンジ' },
+  { id:'red',        type:'single', color:'#E02020', name:'赤' },
+  { id:'black',      type:'single', color:'#181818', name:'黒' },
+  { id:'red-pink',   type:'dual',   c1:'#E02020', c2:'#FF6EB4', name:'赤/ピンク' },
+  { id:'brown',      type:'single', color:'#7B3B10', name:'茶色' },
+  { id:'white',      type:'single', color:'#EEEEEE', name:'白' },
+  { id:'red-black',  type:'dual',   c1:'#E02020', c2:'#181818', name:'赤/黒' },
+  { id:'black-gold', type:'dual',   c1:'#1A1A1A', c2:'#C9A227', name:'黒/金' },
+  { id:'red-orange', type:'dual',   c1:'#E02020', c2:'#FF8500', name:'赤/橙' },
+];
+ 
+let logs = [], diaries = {}, open = new Set(), selWeather = '', selSea = '';
+ 
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { const d = JSON.parse(raw); logs = d.logs || []; diaries = d.diaries || {}; }
+  } catch(e) {}
+}
+function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ logs, diaries })); } catch(e) {}
+}
+ 
+const bgEl = document.getElementById('bg');
+LURES.forEach(l => {
+  const b = document.createElement('button');
+  b.className = 'cb';
+  b.style.background = l.type === 'single' ? l.color : `linear-gradient(135deg,${l.c1} 50%,${l.c2} 50%)`;
+  if (l.id === 'white') b.style.border = '1px solid #dde8f5';
+  b.onclick = () => add(l, b);
+  bgEl.appendChild(b);
+});
+ 
+function dot(l) {
+  const bg = l.type === 'single' ? l.color : `linear-gradient(135deg,${l.c1} 50%,${l.c2} 50%)`;
+  const border = l.id === 'white' ? 'border:1px solid #dde8f5;' : '';
+  return `<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${bg};flex-shrink:0;${border}box-shadow:0 1px 3px rgba(0,0,0,.15);"></span>`;
+}
+ 
+function todayKey() {
+  const now = new Date(), p = n => String(n).padStart(2,'0');
+  return `${now.getFullYear()}/${p(now.getMonth()+1)}/${p(now.getDate())}`;
+}
+ 
+function add(lure, btn) {
+  const now = new Date(), p = n => String(n).padStart(2,'0');
+  const date = todayKey(), time = `${p(now.getHours())}:${p(now.getMinutes())}`;
+  logs.unshift({ id: Date.now(), date, time, lid: lure.id });
+  open.add(date); saveData(); render();
+  btn.style.transform = 'scale(0.82)';
+  setTimeout(() => { btn.style.transform = ''; }, 140);
+}
+ 
+function del(id) { logs = logs.filter(e => e.id !== id); saveData(); render(); }
+function toggle(d) { open.has(d) ? open.delete(d) : open.add(d); render(); }
+function clearAll() {
+  if (!confirm('記録を全て削除しますか？')) return;
+  logs = []; diaries = {}; saveData(); render();
+}
+ 
+function openDiary() {
+  const d = todayKey();
+  document.getElementById('d-date').textContent = d;
+  const ex = diaries[d] || {};
+  selWeather = ex.weather || ''; selSea = ex.sea || '';
+  document.querySelectorAll('#d-weather .d-chip').forEach(c => c.classList.toggle('sel', c.textContent.trim() === selWeather));
+  document.querySelectorAll('#d-sea .d-chip').forEach(c => c.classList.toggle('sel', c.textContent.trim() === selSea));
+  document.getElementById('d-note').value = ex.note || '';
+  document.getElementById('d-overlay').style.display = 'flex';
+}
+function closeDiary() { document.getElementById('d-overlay').style.display = 'none'; }
+function closeIfOutside(e) { if (e.target === document.getElementById('d-overlay')) closeDiary(); }
+function sel(btn, group) {
+  const label = btn.textContent.trim();
+  if (group === 'weather') selWeather = btn.classList.contains('sel') ? '' : label;
+  else selSea = btn.classList.contains('sel') ? '' : label;
+  document.querySelectorAll(`#d-${group} .d-chip`).forEach(c => c.classList.remove('sel'));
+  if ((group === 'weather' && selWeather) || (group === 'sea' && selSea)) btn.classList.add('sel');
+}
+function saveDiary() {
+  const d = todayKey();
+  const note = document.getElementById('d-note').value.trim();
+  if (selWeather || selSea || note) diaries[d] = { weather: selWeather, sea: selSea, note };
+  else delete diaries[d];
+  saveData(); render(); closeDiary();
+}
+ 
+function render() {
+  document.getElementById('tc').textContent = logs.length + '匹';
+  const ls = document.getElementById('ls');
+  const allDates = new Set([...logs.map(e => e.date), ...Object.keys(diaries)]);
+  if (!allDates.size) { ls.innerHTML = '<div class="log-empty">ボタンを押して記録しよう</div>'; return; }
+  const grp = {};
+  logs.forEach(e => { if (!grp[e.date]) grp[e.date] = []; grp[e.date].push(e); });
+  const dates = [...allDates].sort((a, b) => b.localeCompare(a));
+  ls.innerHTML = dates.map(d => {
+    const es = grp[d] || [], isOpen = open.has(d), diary = diaries[d];
+    const preview = [...new Set(es.map(e => e.lid))].slice(0,4)
+      .map(lid => { const l = LURES.find(x => x.id === lid); return l ? dot(l) : ''; }).join('');
+    const diaryDot = diary ? '<span class="diary-dot"></span>' : '';
+    let inner = '';
+    if (isOpen) {
+      const entryRows = es.map(e => {
+        const l = LURES.find(x => x.id === e.lid);
+        return `<div class="log-entry"><span class="log-time">${e.time}</span>${l ? dot(l) : ''}<button class="del-btn" onclick="del(${e.id})">✕</button></div>`;
+      }).join('');
+      const diaryBlock = diary ? `<div class="diary-entry">
+        <div class="diary-meta">${diary.weather ? '<span>'+diary.weather+'</span>' : ''}${diary.sea ? '<span>'+diary.sea+'</span>' : ''}</div>
+        ${diary.note ? '<div class="diary-note">'+diary.note+'</div>' : ''}
+      </div>` : '';
+      inner = `<div class="day-entries">${diaryBlock}${entryRows}</div>`;
+    }
+    return `<div><div class="date-row" onclick="toggle('${d}')">
+      <span class="date-label">${diaryDot}${d}</span>
+      <span class="date-meta">${preview}${es.length > 0 ? '<span style="margin-left:3px;">'+es.length+'匹</span>' : ''}<span class="chevron">${isOpen?'▲':'▼'}</span></span>
+    </div>${inner}</div>`;
+  }).join('');
+}
+ 
+// Service Worker for offline support
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'fishing-log-v1';
+    const ASSETS = [self.location.href];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+ 
+loadData();
+const today = todayKey();
+if (logs.some(e => e.date === today) || diaries[today]) open.add(today);
+render();
 </script>
+</body>
+</html>
+ 
